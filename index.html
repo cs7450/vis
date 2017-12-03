@@ -57,22 +57,18 @@
 	</head>
 	<body>
 		<div id="scatterTooltip"></div>
-        <div id="chordTooltip"></div>
+        
+		<div id="scatterTooltip"></div>
         <!-- Filter!! -->
         <select id="filterbox" data-sol-name="ingredients" multiple = "multiple"></select>
-<!--
-		<p><form id="filterbox">
-          <fieldset id="filter_ingredients">
-            <legend id="filter_ingredients_title">Filter ingredients here!</legend>
-            <input type="text" placeholder="ginger" id="select1">&nbsp;&nbsp;&nbsp;&nbsp;
-            <input type="text" placeholder="garlic" id="select2">&nbsp;&nbsp;&nbsp;&nbsp;
-             <input type="text" placeholder="yellow onion" id="select3">&nbsp;&nbsp;&nbsp;&nbsp;
-             <input type="text" placeholder="spaghetti" id="select4">&nbsp;&nbsp;&nbsp;&nbsp;
-             <input type="text" placeholder="carrot" id="select5">
-             <p><button onclick="getMessage()">Find Recipes!</button></p>
-          </fieldset>
-        </form></p>
--->
+    	<input type="checkbox" class="myCheckbox" value="American" checked> American
+   		<input type="checkbox" class="myCheckbox" value="Chinese" checked> Chinese
+    	<input type="checkbox" class="myCheckbox" value="Italian" checked> Italian
+    	<input type="checkbox" class="myCheckbox" value="Japanese" checked> Japanese
+    	<input type="checkbox" class="myCheckbox" value="Mexican" checked> Mexican
+    	<input type="checkbox" class="myCheckbox" value="Vegetarian" checked> Vegetarian
+        <div id="chordTooltip"></div>
+
 		
 		<script src="https://d3js.org/d3.v3.min.js"></script>
 		<script src="lib/underscore.js"></script>
@@ -119,9 +115,59 @@
                 drawChords(mpr.getMatrix(), mpr.getMap(), data2);
 				addLegend();
                 drawFilterBox(mpr.getMap());
+                d3.selectAll(".myCheckbox").on("change",drawTypeFilter);
 				
 			});
 		});
+
+		function drawTypeFilter() {
+        	d3.select("svg").remove();
+        	d3.csv('recipes_ingredients_testing_scatter.csv', function (error, data) {
+        		d3.csv('recipe_type.csv', function (error2, data2) {
+
+        		var filterList = [];
+        		d3.selectAll(".myCheckbox").each(function(d){
+          			cb = d3.select(this);
+          			if(cb.property("checked")){
+            			filterList.push(cb.property("value"));
+          			}
+        		});
+
+				console.log(filterList);
+        		
+        		var dataFiltered = data.filter(function(d){
+        			var type = d["Type"];
+        			console.log(type);
+        			for (var i=0; i<filterList.length; i++) {
+        				if (type == filterList[i]) {
+        					return d;
+        				}
+        			}
+       			})
+
+				console.log(dataFiltered);
+
+       			dataFiltered.sort(function(x,y){
+					return d3.ascending(x.Type,y.Type)
+				})
+
+				var mpr = chordMpr(dataFiltered);
+				mpr.addValuesToMap('ingredient', 'ingredient') 
+					.addValuesToMap('recipe', 'recipe')
+					.setFilter(function (row, a, b) { 
+						return (row.recipe === a.name && row.ingredient === b.name) ||
+									 (row.recipe === b.name && row.ingredient === a.name);
+					})
+					.setAccessor(function (recs, a, b) { 
+						if (!recs[0]) return 0;
+						return recs.length;
+					}); 
+				console.log(dataFiltered);
+				drawChords(mpr.getMatrix(), mpr.getMap(), data2);
+				addLegend();
+        	})
+        })
+        }
 
 		function addLegend(){
 			// Width and height
