@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<style>
+          div.tooltip {	
+              position: absolute;			
+              text-align: center;			
+/*
+              width: 180px;					
+              height: 28px;					
+*/
+              padding: 10px;				
+              font: 12px sans-serif;		
+              background: lightsteelblue;	
+              border: 0px;		
+              border-radius: 8px;			
+              pointer-events: none;			
+          }
+          #circle circle {
+              fill: none;
+              pointer-events: all;
+          }
+          .group path {
+              fill-opacity: .7;
+          }
+          .chord {
+              fill-opacity: .7;
+              stroke-width: .25px;
+          }
+          path.fade {
+              fill-opacity: 0.07;
+          }
+
+          .axis path,
+          .axis line {
+            fill:none;
+            stroke: black;
+            shape-rendering: crispEdges;
+          }
+          
+          .axis text {
+            font-family: sans-serif;
+            font-size: 11px;
+          }
+          
+          .chordLabel {
+            visibility:hidden;
+          }
+          
+          .text-show {
+            visibility:visible;
+          }
+          
+		</style>
+	</head>
+	<body>
+		<div id="scatterTooltip"></div>
+        <div id="chordTooltip"></div>
+        <!-- Filter!! -->
+        <select id="filterbox" data-sol-name="ingredients" multiple = "multiple"></select>
+<!--
+		<p><form id="filterbox">
+          <fieldset id="filter_ingredients">
+            <legend id="filter_ingredients_title">Filter ingredients here!</legend>
+            <input type="text" placeholder="ginger" id="select1">&nbsp;&nbsp;&nbsp;&nbsp;
+            <input type="text" placeholder="garlic" id="select2">&nbsp;&nbsp;&nbsp;&nbsp;
+             <input type="text" placeholder="yellow onion" id="select3">&nbsp;&nbsp;&nbsp;&nbsp;
+             <input type="text" placeholder="spaghetti" id="select4">&nbsp;&nbsp;&nbsp;&nbsp;
+             <input type="text" placeholder="carrot" id="select5">
+             <p><button onclick="getMessage()">Find Recipes!</button></p>
+          </fieldset>
+        </form></p>
+-->
+		
+		<script src="https://d3js.org/d3.v3.min.js"></script>
+		<script src="lib/underscore.js"></script>
+        <script src="js/mapper.js"></script>
+        <!-- Include searchable option list, code from https://pbauerochse.github.io/searchable-option-list/examples.html -->
+        <link rel="stylesheet" href="css/sol.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+        <script type="text/javascript" src="js/sol.js"></script>
+		
+      <script>
+			
+		CUISINE_COLORS = {"Italian":"7DBEA5", "American":"#F1E0B1", "Chinese":"#5A392B",
+                         "Mexican":"#EE9D31", "Japanese":"#F26C1A", 
+                          "Vegetarian":"#324d97", "Ingredient":"#221642"};
+          window.currIngredients = new Array(0); 
+          
+
+		//*******************************************************************
+		//  CREATE MATRIX AND MAP
+		//*******************************************************************
+		d3.csv('recipes_ingredients_testing.csv', function (error, data) {
+            window.recipes_ingredients_data = data;
+            mpr = window.mpr;
+			data.sort(function(x,y) {
+				return d3.ascending(x.Type,y.Type)
+			});
+			
+            d3.csv('recipe_type.csv', function (error2, data2) {
+				var mpr = chordMpr(data);
+				mpr.addValuesToMap('ingredient', 'ingredient')
+					 .addValuesToMap('recipe', 'recipe')
+					 .setFilter(function (row, a, b) {
+                        var ingredientSelected = 
+                            window.currIngredients.indexOf(row.ingredient) > 0;
+						return (row.recipe === a.name && row.ingredient === b.name) ||
+									 (row.recipe === b.name && row.ingredient === a.name) && ingredientSelected;
+                  
+					 })
+					 .setAccessor(function (recs, a, b) {
+						if (!recs[0]) return 0;
+						return recs.length;
+					 });
+                window.mpr = mpr; window.typeData = data2;
+                drawChords(mpr.getMatrix(), mpr.getMap(), data2);
+				addLegend();
+                drawFilterBox(mpr.getMap());
+				
+			});
+		});
+
+		function addLegend(){
+			// Width and height
+			var wLegend = 150;
+			var hLegend = 150;
+			var paddingLegend = 40;
+
+			// Create SVG element
+			var svg = d3.select("svg")
+
+		    var legend = svg.append("g")
+		    legend.append("rect")
+		    	.attr("width",12)
+			    .attr("height",12)
+			    .attr("x",wLegend - paddingLegend * 3.1)
+		    	.attr("y",paddingLegend + 20)
+		    	.style("fill",CUISINE_COLORS.Italian)
+		    	.style("stroke","none");
+		    legend.append("text")
+		    	.attr("x",wLegend - paddingLegend * 2.5)
+		    	.attr("y",paddingLegend + 30)
+		    	.text("Italian");
+
+		    legend.append("rect")
+		    	.attr("width",12)
+			    .attr("height",12)
+			    .attr("x",wLegend - paddingLegend * 3.1)
+		    	.attr("y",paddingLegend + 40)
+		    	.style("fill",CUISINE_COLORS.American)
+		    	.style("stroke","none");
+		    legend.append("text")
+		    	.attr("x",wLegend - paddingLegend * 2.5)
+		    	.attr("y",paddingLegend + 50)
+		    	.text("American");
+
+		    legend.append("rect")
+		    	.attr("width",12)
+			    .attr("height",12)
+			    .attr("x",wLegend - paddingLegend * 3.1)
+		    	.attr("y",paddingLegend + 60)
+		    	.style("fill",CUISINE_COLORS.Chinese)
+		    	.style("stroke","none");
+		    legend.append("text")
+		    	.attr("x",wLegend - paddingLegend * 2.5)
+		    	.attr("y",paddingLegend + 70)
+		    	.text("Chinese");
+
+		    legend.append("rect")
+		    	.attr("width",12)
+			    .attr("height",12)
+			    .attr("x",wLegend - paddingLegend * 3.1)
+		    	.attr("y",paddingLegend + 80)
+		    	.style("fill",CUISINE_COLORS.Mexican)
+		    	.style("stroke","none");
+		    legend.append("text")
+		    	.attr("x",wLegend - paddingLegend * 2.5)
+		    	.attr("y",paddingLegend + 90)
+		    	.text("Mexican");
+
+		    legend.append("rect")
+		    	.attr("width",12)
+			    .attr("height",12)
+			    .attr("x",wLegend - paddingLegend * 3.1)
+		    	.attr("y",paddingLegend + 100)
+		    	.style("fill",CUISINE_COLORS.Japanese)
+		    	.style("stroke","none");
+		    legend.append("text")
+		    	.attr("x",wLegend - paddingLegend * 2.5)
+		    	.attr("y",paddingLegend + 110)
+		    	.text("Japanese");
+
+		    legend.append("rect")
+		    	.attr("width",12)
+			    .attr("height",12)
+			    .attr("x",wLegend - paddingLegend * 3.1)
+		    	.attr("y",paddingLegend + 120)
+		    	.style("fill",CUISINE_COLORS.Vegetarian)
+		    	.style("stroke","none");
+		    legend.append("text")
+		    	.attr("x",wLegend - paddingLegend * 2.5)
+		    	.attr("y",paddingLegend + 130)
+		    	.text("Vegetarian");
+		}
+
+		function scatterPlotData(selectedNode) {
+			//console.log(selectedNode)
+			d3.csv('recipes_ingredients_testing_scatter.csv', function (error, data) {
+				d3.csv('dict.csv', function (error, data3) {
+					var dataFiltered = data3.filter(function (d) {
+						if (d["ingredient"] == selectedNode){
+							var arrString = d["intersection"]
+							arrString = arrString.replace(/'/g,"")
+							arrString = arrString.slice(1,-1)
+							var arr = arrString.split(",").map((item)=>item.trim());
+							var arrRecipes = [];
+							arr.forEach(function(element){
+								//console.log(element)
+								var dataFiltered = data.filter(function (d) {
+									if (d["recipe"] == element){
+										arrRecipes.push(d)
+									}
+								})
+
+							})
+							scatterPlot(arrRecipes)
+						}
+					})
+				})
+			})
+		};
+
+		function scatterPlot(arrRecipes){
+			d3.select("#scatterPlotId").remove()
+			//console.log(arrRecipes)
+	    	
+	    	var width = 270
+	        	height = 300
+	        	padding = 40
+
+	    	var svg = d3.select("svg")
+	    		.append("svg")
+	        	//.attr("width", width)
+	        	.attr("height", height)
+	        	.attr("id","scatterPlotId")
+	        	.append("g")
+	        	.attr("transform", "translate("+ (700) + "," + (0) + ")")
+
+	        // create scale function
+	        var x = d3.scale.linear()
+        		.range([0, width - padding])
+        		.domain([0, d3.max(arrRecipes, function (d) {
+            		return d.base_servings;
+        		})]);
+        	var y = d3.scale.linear()
+        		.range([height- padding, padding])
+        		.domain([0, d3.max(arrRecipes, function (d) {
+            		return d.total_time_mins;
+        		})]);
+        	
+            // define X,Y axis
+			var xAxis = 
+                d3.svg.axis()
+				  .scale(x)
+				  .orient("bottom")
+				  .ticks(6);
+
+			var yAxis = 
+                d3.svg.axis()
+                    .scale(y)
+					.orient("left")
+					.ticks(8);
+
+
+			// Create X-axis, Y-axis
+		    svg.append("g")
+		        .attr("transform", "translate(" + (0) + "," + (height - padding) + ")")
+		        .attr("class", "axis")
+		        .call(xAxis);
+		    svg.append("g")
+		        .attr("class", "axis")
+		        .attr("transform", "translate(" + (0) + "," + (0) + ")")
+		        .call(yAxis);
+
+		    //Create X axis label   
+		    svg.append("text")
+              .attr("x", width / 2 )
+              .attr("y",  y(0) + 35 )
+              .style("text-anchor", "middle")
+              .text("Serving Size");
+
+		    //Create Y axis label
+		    svg.append("text")
+				.attr("transform", "translate("+ (-30) +","+(height/2)+") rotate (-90)")
+			    .style("text-anchor", "middle")
+			    .text("Total Cooking Time");
+
+			var tooltip = d3.select("body").append("div")
+                  .attr("class", "tooltip")
+                  .style("opacity", 0);
+
+			//draw data points
+			svg.selectAll(".dot")
+			   .data(arrRecipes)
+			   .enter()
+			   .append("circle")
+			   .attr("cx", function(d){
+			   		return x(d["base_servings"]);
+			   })
+			   .attr("cy", function(d){
+			   		return y(d["total_time_mins"]);
+			   })
+			   .attr("r",3)
+			   .style("stroke", function(d) {
+                  return getColorForRecipe(d["recipe"], window.typeData)
+                })
+			   .style("fill", function(d) {
+                  return getColorForRecipe(d["recipe"], window.typeData)
+                })
+			   .on("mouseover",function(d){
+			   		tooltip.transition()		
+                		.duration(200)		
+                		.style("opacity", .9);
+				    tooltip.html(d["recipe"])
+				      .style("left", (d3.event.pageX + 1) + "px")
+				      .style("top", (d3.event.pageY - 1) + "px")
+/*				    tooltip.transition()
+				      .duration(200)
+				      .style("opacity", .9);*/
+				})
+			   .on("mouseout", function(d) {		
+            		tooltip.transition()		
+                	.duration(500)		
+                	.style("opacity", 0);	
+        		})
+		}
+		
+		function getColorForRecipe(recipeName, typeData) {
+			for (i in typeData) {
+				if (typeData[i].recipe == recipeName) {
+						var type = typeData[i].type
+				}
+				if (type == "Italian") {
+					return CUISINE_COLORS.Italian;
+				} else if (type == "American") { 
+					return CUISINE_COLORS.American;
+				} else if (type == "Chinese") {
+					return CUISINE_COLORS.Chinese;
+				} else if (type == "Mexican") {
+					return CUISINE_COLORS.Mexican;
+				} else if (type == "Japanese") {
+					return CUISINE_COLORS.Japanese;
+				} else if (type == "Vegetarian") {
+					return CUISINE_COLORS.Vegetarian;
+				}
+			}
+			return "orange";
+		} 
+          
+        function drawFilterBox(mapData) {
+          var ingredientNames = Object.keys(mapData)
+            .filter(key => mapData[key].data == "ingredient");
+          
+          var ingredientObject = new Array(0);
+          for (var i = 0; i < ingredientNames.length; ++i) {
+            ingredientObject.push({"type":"option", 
+                                   "value":ingredientNames[i], 
+                                   "label":ingredientNames[i]});
+          }
+          
+          $("#filterbox").searchableOptionList({
+            data: ingredientObject, 
+            maxHeight: "150px", 
+            texts: {searchplaceholder: "What ingredients do you already have?"},
+            showSelectAll: true
+          });
+        }
+          
+        function updateChords(newItem, change) {
+          d3.selectAll("svg").remove();
+          
+          newItemIdx = (window.currIngredients.indexOf(newItem.value));
+          if (change == "add") {
+            if (newItemIdx < 0) {
+              window.currIngredients.push(newItem.value);
+            } else return; 
+          } else if (change == "remove") {
+            if (newItemIdx > -1) {
+              window.currIngredients.splice(newItemIdx, 1);
+            } else return;
+          } else console.log("unrecognized change input!"); 
+          
+          var dataFiltered = window.recipes_ingredients_data.filter(function(d) {
+            if (window.currIngredients.indexOf(d["ingredient"]) > -1) {
+              return d;
+            };
+          })
+          var dataFiltered = dataFiltered.sort(function(x,y){
+              return d3.ascending(x.Type,y.Type)
+          })
+
+          var mpr = chordMpr(dataFiltered);
+          mpr.addValuesToMap('ingredient', 'ingredient')
+               .addValuesToMap('recipe', 'recipe')
+               .setFilter(function (row, a, b) {
+                  return (row.recipe === a.name && row.ingredient === b.name) ||
+                               (row.recipe === b.name && row.ingredient === a.name);
+
+               })
+               .setAccessor(function (recs, a, b) {
+                  if (!recs[0]) return 0;
+                  return recs.length;
+               });
+          window.mpr = mpr; 
+          drawChords(mpr.getMatrix(), mpr.getMap(), window.typeData);
+          addLegend();
+
+        }
+		
+        //*******************************************************************
+		//  DRAW THE CHORD DIAGRAM
+		//*******************************************************************
+		function drawChords (matrix, mmap, typeData) {
+
+			var w = 1000, h = 1000, r1 = h / 3, r0 = r1 - 100;
+
+			var chord = d3.layout.chord()
+					.padding(.02)
+					//.sortSubgroups(d3.descending)
+			var arc = d3.svg.arc()
+					.innerRadius(r0)
+					.outerRadius(r0 + 20);
+
+			var svg = d3.select("body").append("svg:svg")
+					.attr("width", w)
+					.attr("height", h)
+					//.attr("transform", "translate(" + 100 + "," + 200 + ")")
+				.append("svg:g")
+					.attr("id", "circle")
+					.attr("transform", "translate(" + w / 2.5 + "," + h / 2.5 + ")");
+
+			svg.append("circle")
+					.attr("r", r0 + 20);
+
+			var rdr = chordRdr(matrix, mmap);
+
+			chord.matrix(matrix);
+
+			var selected = false;
+			var selectedI = -1;
+
+			var tooltip = d3.select("body").append("div")
+                  .attr("class", "tooltip")
+                  .style("opacity", 0);
+          
+            var g = svg.selectAll("g.group")
+					.data(chord.groups())
+				.enter().append("svg:g")
+					.attr("class", "group")
+					.on("mouseover", function(d) {
+						if (!selected) {
+							mouseover(rdr(d).gname,d.index);
+						}
+					})
+					.on("click",function(d){
+						if (selectedI != d.index) {
+							selected = true;
+							selectedI = d.index;
+						} else if (selectedI == d.index) {
+							selected = false;
+							selectedI = -1;
+						}
+						mouseover(rdr(d).gname,d.index);
+						scatterPlotData(rdr(d).gname);
+					});
+
+			g.append("svg:path")
+					.style("stroke", "black")
+					.style("fill", function(d) { 
+						return rdr(d).gdata == "ingredient" ? CUISINE_COLORS.Ingredient: getColorForRecipe(rdr(d).gname, typeData); })
+					.attr("d", arc);
+
+			g.append("svg:text")
+					.each(function(d) { d.angle = (d.startAngle + d.endAngle) / 2; })
+					.attr("dy", ".35em")
+                    .attr("class","chordLabel")
+					.style("font-family", "helvetica, arial, sans-serif")
+					.style("font-size", "10px")
+                    .style("visibility", "hidden")
+					.attr("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
+					.attr("transform", function(d) {
+						return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
+								+ "translate(" + (r0 + 30) + ")"
+								+ (d.angle > Math.PI ? "rotate(180)" : "");
+					})
+					.text(function(d) { 
+						return rdr(d).gname; });
+            
+            var chordLabels = svg.selectAll(".chordLabel");
+
+			var chordPaths = svg.selectAll("path.chord")
+						.data(chord.chords())
+					.enter().append("svg:path")
+						.attr("class", "chord")
+						.style("fill", function(d) {
+                            return getColorForRecipe(rdr(d).tname, typeData);
+						})
+						.attr("d", d3.svg.chord().radius(r0))
+
+			function mouseover(d, i) {
+//                tooltip.transition()		
+//                		.duration(200)		
+//                		.style("opacity", .9);
+//				    tooltip.html(d)
+//				      .style("left", (d3.event.pageX + 1) + "px")
+//				      .style("top", (d3.event.pageY - 1) + "px")
+//                      .text(d)
+				chordPaths.classed("fade", function(p) {
+                    return p.source.index != i
+							&& p.target.index != i;
+				});
+              
+                chordLabels.map(function(p) {
+                  var onlyRecipes = p.filter(function(pl, i) {
+                    if (pl.innerHTML == d) {
+                      var style = pl.style;
+                      pl.style.visibility = "visible";
+                      console.log(p)
+                    } else {
+                      pl.style.visibility = "hidden";
+                    }
+                    return pl.innerHTML == d;
+                  })
+                })
+			}			
+	}
+	</script>
+	</body>
+</html>
