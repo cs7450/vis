@@ -137,7 +137,6 @@
         		
         		var dataFiltered = data.filter(function(d){
         			var type = d["Type"];
-        			//console.log(type);
         			for (var i=0; i<filterList.length; i++) {
         				if (type == filterList[i]) {
         					return d;
@@ -148,6 +147,7 @@
 				//console.log(dataFiltered);
 
        			dataFiltered.sort(function(x,y){
+       				console.log(x.Type)
 					return d3.ascending(x.Type,y.Type)
 				})
 
