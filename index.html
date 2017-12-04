@@ -133,11 +133,11 @@
           			}
         		});
 
-				console.log(filterList);
+				//console.log(filterList);
         		
         		var dataFiltered = data.filter(function(d){
         			var type = d["Type"];
-        			console.log(type);
+        			//console.log(type);
         			for (var i=0; i<filterList.length; i++) {
         				if (type == filterList[i]) {
         					return d;
@@ -145,7 +145,7 @@
         			}
        			})
 
-				console.log(dataFiltered);
+				//console.log(dataFiltered);
 
        			dataFiltered.sort(function(x,y){
 					return d3.ascending(x.Type,y.Type)
@@ -162,7 +162,7 @@
 						if (!recs[0]) return 0;
 						return recs.length;
 					}); 
-				console.log(dataFiltered);
+				//console.log(dataFiltered);
 				drawChords(mpr.getMatrix(), mpr.getMap(), data2);
 				addLegend();
         	})
@@ -256,6 +256,12 @@
 			//console.log(selectedNode)
 			d3.csv('recipes_ingredients_testing_scatter.csv', function (error, data) {
 				d3.csv('dict.csv', function (error, data3) {
+					var nodeURL = data.filter(function(d){
+						if (d["recipe"] == selectedNode) {
+							nodeName = d["recipe"]
+							nodeLink = d["learn_more_url"]
+						}
+					})
 					var dataFiltered = data3.filter(function (d) {
 						if (d["ingredient"] == selectedNode){
 							var arrString = d["intersection"]
@@ -264,7 +270,6 @@
 							var arr = arrString.split(",").map((item)=>item.trim());
 							var arrRecipes = [];
 							arr.forEach(function(element){
-								//console.log(element)
 								var dataFiltered = data.filter(function (d) {
 									if (d["recipe"] == element){
 										arrRecipes.push(d)
@@ -272,14 +277,14 @@
 								})
 
 							})
-							scatterPlot(arrRecipes)
+							scatterPlot(arrRecipes, nodeName, nodeLink)
 						}
 					})
 				})
 			})
 		};
 
-		function scatterPlot(arrRecipes){
+		function scatterPlot(arrRecipes, nodeName, nodeLink){
 			d3.select("#scatterPlotId").remove()
 			//console.log(arrRecipes)
 	    	
@@ -382,6 +387,13 @@
                 	.duration(500)		
                 	.style("opacity", 0);	
         		})
+			svg.append("text")
+			   .attr("x",(width /2))
+			   .attr("y", 15)
+			   .attr("text-anchor","middle")
+			   .style("font-size","16px")
+			   .style("text-decoration","underline")
+			   .html('<a href= "'+ nodeLink +'" target="_blank">' + nodeName + "</a>") // the website link is stored in the variable: NodeLink
 		}
 		
 		function getColorForRecipe(recipeName, typeData) {
@@ -574,7 +586,7 @@
                     if (pl.innerHTML == d) {
                       var style = pl.style;
                       pl.style.visibility = "visible";
-                      console.log(p)
+                      //console.log(p)
                     } else {
                       pl.style.visibility = "hidden";
                     }
