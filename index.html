@@ -83,14 +83,14 @@
 		CUISINE_COLORS = {"Italian":"FFD92F", "American":"#66C2A5", "Chinese":"#FC8D62",
                          "Mexican":"#E78AC3", "Japanese":"#8DA0CB",
                           "Vegetarian":"#A6D854", "Ingredient":"#FFFFFF"};
-          window.currIngredients = new Array(0);
+          window.currIngredients = new Array(0); 
 
 
 		//*******************************************************************
 		//  CREATE MATRIX AND MAP
 		//*******************************************************************
 		d3.csv('recipes_ingredients_testing.csv', function (error, data) {
-            window.recipes_ingredients_data = data;
+            window.recipes_ingredients_data = data; 
             mpr = window.mpr;
 			data.sort(function(x,y) {
 				return d3.ascending(x.Type,y.Type)
@@ -115,59 +115,54 @@
                 drawChords(mpr.getMatrix(), mpr.getMap(), data2);
 				addLegend();
                 drawFilterBox(mpr.getMap());
-                d3.selectAll(".myCheckbox").on("change",drawTypeFilter);
+                d3.selectAll(".myCheckbox").on("change",updateChords);
 
 			});
 		});
 
-		function drawTypeFilter() {
-        	d3.select("svg").remove();
-        	d3.csv('recipes_ingredients_testing_scatter.csv', function (error, data) {
-        		d3.csv('recipe_type.csv', function (error2, data2) {
-
-        		var filterList = [];
-        		d3.selectAll(".myCheckbox").each(function(d){
-          			cb = d3.select(this);
-          			if(cb.property("checked")){
-            			filterList.push(cb.property("value"));
-          			}
-        		});
-
-				//console.log(filterList);
-
-        		var dataFiltered = data.filter(function(d){
-        			var type = d["Type"];
-        			for (var i=0; i<filterList.length; i++) {
-        				if (type == filterList[i]) {
-        					return d;
-        				}
-        			}
-       			})
-
-				//console.log(dataFiltered);
-
-       			dataFiltered.sort(function(x,y){
-       				console.log(x.Type)
-					return d3.ascending(x.Type,y.Type)
-				})
-
-				var mpr = chordMpr(dataFiltered);
-				mpr.addValuesToMap('ingredient', 'ingredient')
-					.addValuesToMap('recipe', 'recipe')
-					.setFilter(function (row, a, b) {
-						return (row.recipe === a.name && row.ingredient === b.name) ||
-									 (row.recipe === b.name && row.ingredient === a.name);
-					})
-					.setAccessor(function (recs, a, b) {
-						if (!recs[0]) return 0;
-						return recs.length;
-					});
-				//console.log(dataFiltered);
-				drawChords(mpr.getMatrix(), mpr.getMap(), data2);
-				addLegend();
-        	})
-        })
-        }
+//		function drawTypeFilter() {
+//        	d3.selectAll("svg").remove();
+//        	var filterList = [];
+//            d3.selectAll(".myCheckbox").each(function(d){
+//                cb = d3.select(this);
+//                if(cb.property("checked")){
+//                    filterList.push(cb.property("value"));
+//                }
+//            });
+//
+//            //console.log(filterList);
+//
+//            var dataFiltered = data.filter(function(d){
+//                var type = d["Type"];
+//                for (var i=0; i<filterList.length; i++) {
+//                    if (type == filterList[i]) {
+//                        return d;
+//                    }
+//                }
+//            })
+//
+//				//console.log(dataFiltered);
+//
+//       			dataFiltered.sort(function(x,y){
+//       				console.log(x.Type)
+//					return d3.ascending(x.Type,y.Type)
+//				})
+//
+//				var mpr = chordMpr(dataFiltered);
+//				mpr.addValuesToMap('ingredient', 'ingredient')
+//					.addValuesToMap('recipe', 'recipe')
+//					.setFilter(function (row, a, b) {
+//						return (row.recipe === a.name && row.ingredient === b.name) ||
+//									 (row.recipe === b.name && row.ingredient === a.name);
+//					})
+//					.setAccessor(function (recs, a, b) {
+//						if (!recs[0]) return 0;
+//						return recs.length;
+//					});
+//				//console.log(dataFiltered);
+//				drawChords(mpr.getMatrix(), mpr.getMap(), data2);
+//				addLegend();
+//        	}
 
 		function addLegend(){
 			// Width and height
@@ -441,27 +436,49 @@
         function updateChords(newItem, change) {
           d3.selectAll("svg").remove();
 
-          newItemIdx = (window.currIngredients.indexOf(newItem.value));
-          if (change == "add") {
-            if (newItemIdx < 0) {
-              window.currIngredients.push(newItem.value);
-            } else return;
-          } else if (change == "remove") {
-            if (newItemIdx > -1) {
-              window.currIngredients.splice(newItemIdx, 1);
-            } else return;
-          } else console.log("unrecognized change input!");
+          if (!(newItem == undefined)) {
+            // Responding to the filter search bar
+            newItemIdx = (window.currIngredients.indexOf(newItem.value));
+            if (change == "add") {
+              if (newItemIdx < 0) {
+                window.currIngredients.push(newItem.value);
+              } else return;
+            } else if (change == "remove") {
+              if (newItemIdx > -1) {
+                window.currIngredients.splice(newItemIdx, 1);
+              } else return;
+            } else console.log("unrecognized change input!");
+          }
+          
+          // Check cuisine filters at the top
+          var filterList = [];
+          d3.selectAll(".myCheckbox").each(function(d){
+              cb = d3.select(this);
+              if(cb.property("checked")){
+                  filterList.push(cb.property("value"));
+              }
+          });
 
-          var dataFiltered = window.recipes_ingredients_data.filter(function(d) {
+          var ingFiltered = window.recipes_ingredients_data.filter(function(d) {
             if (window.currIngredients.indexOf(d["ingredient"]) > -1) {
               return d;
             };
           })
-          var dataFiltered = dataFiltered.sort(function(x,y){
+          var recipesFiltered = ingFiltered.sort(function(x,y){
               return d3.ascending(x.Type,y.Type)
-          })
+          });
+          
+          //Filter for cuisine
+          var cuisineFiltered = recipesFiltered.filter(function(d){
+                var type = d["Type"];
+                for (var i=0; i<filterList.length; i++) {
+                    if (type == filterList[i]) {
+                        return d;
+                    }
+                }
+            })
 
-          var mpr = chordMpr(dataFiltered);
+          var mpr = chordMpr(cuisineFiltered);
           mpr.addValuesToMap('ingredient', 'ingredient')
                .addValuesToMap('recipe', 'recipe')
                .setFilter(function (row, a, b) {
