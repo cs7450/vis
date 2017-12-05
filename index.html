@@ -73,7 +73,7 @@
 		<script src="https://d3js.org/d3.v3.min.js"></script>
 		<script src="lib/underscore.js"></script>
         <script src="js/mapper.js"></script>
-        <!-- Include searchable option list, code from https://pbauerochse.github.io/searchable-option-list/examples.html -->
+        <script src="js/d3.stretched.chord.js"></script>
         <link rel="stylesheet" href="css/sol.css">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <script type="text/javascript" src="js/sol.js"></script>
@@ -83,7 +83,7 @@
 		CUISINE_COLORS = {"Italian":"FFD92F", "American":"#66C2A5", "Chinese":"#FC8D62",
                          "Mexican":"#E78AC3", "Japanese":"#8DA0CB",
                           "Vegetarian":"#A6D854", "Ingredient":"#FFFFFF"};
-          window.currIngredients = new Array(0); 
+        window.currIngredients = new Array(0); 
 
 
 		//*******************************************************************
@@ -249,42 +249,42 @@
 
 		function scatterPlotData(selectedNode) {
 			//console.log(selectedNode)
-			d3.csv('300 recipes data/recipes_ingredients_testing_scatter.csv', function (error, data) {
-				d3.csv('300 recipes data/dict.csv', function (error, data3) {
-					var nodeURL = data.filter(function(d){
-						if (d["recipe"] == selectedNode) {
-							nodeName = d["recipe"]
-							nodeLink = d["learn_more_url"]
-						}
-					})
-					var dataFiltered = data3.filter(function (d) {
-						if (d["ingredient"] == selectedNode){
-							var arrString = d["intersection"]
-							arrString = arrString.replace(/'/g,"")
-							arrString = arrString.slice(1,-1)
-							var arr = arrString.split(",").map((item)=>item.trim());
-							var arrRecipes = [];
-							arr.forEach(function(element){
-								var dataFiltered = data.filter(function (d) {
-									if (d["recipe"] == element){
-										arrRecipes.push(d)
-									}
-								})
+            data = window.recipes_ingredients_data;
+			//d3.csv('300 recipes data/recipes_ingredients_testing_scatter.csv', function (error, data) {
+            d3.csv('300 recipes data/dict.csv', function (error, data3) {
+                var nodeURL = data.filter(function(d){
+                    if (d["recipe"] == selectedNode) {
+                        nodeName = d["recipe"]
+                        nodeLink = d["learn_more_url"]
+                    }
+                })
+                var dataFiltered = data3.filter(function (d) {
+                    if (d["ingredient"] == selectedNode){
+                        var arrString = d["intersection"]
+                        arrString = arrString.replace(/'/g,"")
+                        arrString = arrString.slice(1,-1)
+                        var arr = arrString.split(",").map((item)=>item.trim());
+                        var arrRecipes = [];
+                        arr.forEach(function(element){
+                            var dataFiltered = data.filter(function (d) {
+                                if (d["recipe"] == element){
+                                    arrRecipes.push(d)
+                                }
+                            })
 
-							})
-							scatterPlot(arrRecipes, nodeName, nodeLink)
-						}
-					})
-				})
-			})
-		};
+                        })
+                        scatterPlot(arrRecipes, nodeName, nodeLink)
+                    }
+                })
+            })
+        };
 
 		function scatterPlot(arrRecipes, nodeName, nodeLink){
 			d3.select("#scatterPlotId").remove()
 			//console.log(arrRecipes)
 
-	    	var width = 270
-	        	height = 300
+	    	var width = 270,
+	        	height = 300,
 	        	padding = 40
 
 	    	var svg = d3.select("svg")
@@ -304,7 +304,7 @@
         	var y = d3.scale.linear()
         		.range([height- padding, padding])
         		.domain([0, d3.max(arrRecipes, function (d) {
-            		return d.total_time_mins;
+            		return Number(d.total_time_mins);
         		})]);
 
             // define X,Y axis
@@ -357,7 +357,12 @@
 			   		return x(d["base_servings"]);
 			   })
 			   .attr("cy", function(d){
-			   		return y(d["total_time_mins"]);
+                    if(isNaN(Number(d["total_time_mins"]))) {
+                      var time = 0;
+                    } else {
+                      var time = Number(d.total_time_mins); 
+                    };
+			   		return y(time);
 			   })
 			   .attr("r",3)
 			   .style("stroke", function(d) {
@@ -504,6 +509,7 @@
 			// Splice in dummy data HERE so it's based on the total number of recipes we're displaying right now
 		    
             // Calculate size of offset to occupy a set amount of the diagram
+            if (matrix.length == 0) return;
             var numEls = matrix.length - 2, emptyPerc = 0.3;
             var dummySize = Math.round(matrix.length*emptyPerc);	
           
@@ -523,7 +529,7 @@
 				m.splice(matrix.length,0,0);
 			});
 			var lastRow = matrix.length-1; var idCol = maxID+1;
-			matrix[lastRow][idCol] = dummySize;
+            matrix[lastRow][idCol] = dummySize;
 			matrix[idCol][lastRow] = dummySize;
 			
 			// Now, update mmap to adjust for dummy data;
@@ -537,7 +543,8 @@
             var w = 1000, h = 1000, r1 = h / 3, r0 = r1 - 100;
             //Calculate offset
             var offset = Math.PI * (dummySize/(matrix.length-2 + dummySize)) / 2;
-
+            // How far (px) to pull out chords
+            var pullOutSize = 50;
           
             function startAngle(d) {return d.startAngle + offset;}
             function endAngle(d) {return d.endAngle + offset;}
@@ -601,23 +608,35 @@
                     .style("visibility", function(d) {
                         return rdr(d).gdata == "dummyNode" ? "hidden":"visible";
                       })
-					.attr("d", arc);
+					.attr("d", arc)
+                    .attr("transform", function(d, i) {
+                        //The pullOutSize should be added to the arcs on the right and subtracted from the arcs on the left
+                        //Therefore check of the starting angle is larger than half of a circle to figure out when to flip between these two options
+                        //Save the pullOutSize in the data so it can be use again for the text in a following step
+                        d.pullOutSize = pullOutSize * ( rdr(d).gdata == "recipe" ? -1 : 1); //The 0.01 is for rounding errors
+                        return "translate(" + d.pullOutSize + ',' + 0 + ")";
+                    });;
 
 			g.append("svg:text")
-					.each(function(d) { d.angle = (d.startAngle + d.endAngle) / 2 + offset; })
-					.attr("dy", ".35em")
-                    .attr("class","chordLabel")
-					.style("font-family", "helvetica, arial, sans-serif")
-					.style("font-size", "10px")
-                    .style("visibility", "hidden")
-					.attr("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
-					.attr("transform", function(d) {
-						return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
-								+ "translate(" + (r0 + 30) + ")"
-								+ (d.angle > Math.PI ? "rotate(180)" : "");
-					})
-					.text(function(d) {
-						return rdr(d).gname; });
+              .each(function(d) { d.angle = (d.startAngle + d.endAngle) / 2 + offset; })
+              .attr("dy", ".35em")
+              .attr("class","chordLabel")
+              .style("font-family", "helvetica, arial, sans-serif")
+              .style("font-size", "10px")
+              .style("visibility", "hidden")
+              .attr("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
+              .attr("transform", function(d) {
+                  var c = arc.centroid(d); 
+//                  return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
+//                          + "translate(" + (r0 + 30) + ")"
+//                          + (d.angle > Math.PI ? "rotate(180)" : "");
+                  return "translate(" + (c[0] + d.pullOutSize) + "," + c[1] + ")" //First move the arc pullOutSize away from the original location along a horizontal line
+	                 + "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" //Stil the same
+	                 + "translate(" + 20 + ",0)" //Changed because of the first translate already applied. How far should the label be placed away from the arc itself
+	                 + (d.angle > Math.PI ? "rotate(180)" : "") //Stil the same
+              })
+              .text(function(d) {
+                  return rdr(d).gname; });
 
             var chordLabels = svg.selectAll(".chordLabel");
 
@@ -631,10 +650,11 @@
                         .style("visibility", function(d) {
                           return rdr(d).sname == "dummyNode" ? "hidden":"visible";
                         })
-						.attr("d", d3.svg.chord()
+						.attr("d", stretchedChord(mmap, rdr)
                               .radius(r0)
                               .startAngle(startAngle)
-                              .endAngle(endAngle))
+                              .endAngle(endAngle)
+                              .pullOutSize(pullOutSize))
 
 			function mouseover(d, i) {
 //                tooltip.transition()
