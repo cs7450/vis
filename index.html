@@ -89,14 +89,14 @@
 		//*******************************************************************
 		//  CREATE MATRIX AND MAP
 		//*******************************************************************
-		d3.csv('recipes_ingredients_testing.csv', function (error, data) {
+		d3.csv('300 recipes data/recipes_ingredients_testing.csv', function (error, data) {
             window.recipes_ingredients_data = data; 
             mpr = window.mpr;
 			data.sort(function(x,y) {
 				return d3.ascending(x.Type,y.Type)
 			});
 
-            d3.csv('recipe_type.csv', function (error2, data2) {
+            d3.csv('300 recipes data/recipe_type.csv', function (error2, data2) {
 				var mpr = chordMpr(data);
 				mpr.addValuesToMap('ingredient', 'ingredient')
 					 .addValuesToMap('recipe', 'recipe')
@@ -112,7 +112,7 @@
 						return recs.length;
 					 });
                 window.mpr = mpr; window.typeData = data2;
-                drawChords(mpr.getMatrix(), mpr.getMap(), data2);
+                //drawChords(mpr.getMatrix(), mpr.getMap(), data2);
 				addLegend();
                 drawFilterBox(mpr.getMap());
                 d3.selectAll(".myCheckbox").on("change",updateChords);
@@ -249,8 +249,8 @@
 
 		function scatterPlotData(selectedNode) {
 			//console.log(selectedNode)
-			d3.csv('recipes_ingredients_testing_scatter.csv', function (error, data) {
-				d3.csv('dict.csv', function (error, data3) {
+			d3.csv('300 recipes data/recipes_ingredients_testing_scatter.csv', function (error, data) {
+				d3.csv('300 recipes data/dict.csv', function (error, data3) {
 					var nodeURL = data.filter(function(d){
 						if (d["recipe"] == selectedNode) {
 							nodeName = d["recipe"]
@@ -500,15 +500,56 @@
 		//  DRAW THE CHORD DIAGRAM
 		//*******************************************************************
 		function drawChords (matrix, mmap, typeData) {
+            // separating recipes and ingredients based on code from: https://www.visualcinnamon.com/2015/08/stretched-chord.html
+			// Splice in dummy data HERE so it's based on the total number of recipes we're displaying right now
+		    
+            // Calculate size of offset to occupy a set amount of the diagram
+            var numEls = matrix.length - 2, emptyPerc = 0.3;
+            var dummySize = Math.round(matrix.length*emptyPerc);	
+          
+			var onlyIngredients = Object.keys(mmap).filter(d => mmap[d].data == "ingredient");
+			var ingIDs = onlyIngredients.map(function(d) {
+				return mmap[d].id;
+			});
+			var maxID = Math.max(...ingIDs)
+			//Add row at split between ingredients/recipes and a row at end
+			matrix.splice(matrix.length,0,new Array(matrix.length).fill(0));
+			matrix.splice(maxID+1,0,new Array(matrix.length).fill(0));
+			// Add column at split between ingredients/recipes and column at the end
+			matrix.forEach(function(m, i) {
+				if (i != maxID+1 && i != matrix.length) {
+					m.splice(maxID+1,0,0);
+				}
+				m.splice(matrix.length,0,0);
+			});
+			var lastRow = matrix.length-1; var idCol = maxID+1;
+			matrix[lastRow][idCol] = dummySize;
+			matrix[idCol][lastRow] = dummySize;
+			
+			// Now, update mmap to adjust for dummy data;
+			mmap_keys = Object.keys(mmap);
+			for (i = maxID+1; i < mmap_keys.length; i++) {
+				var recipe_name = mmap_keys[i]
+				mmap[recipe_name].id = mmap[recipe_name].id + 1;
+			}
 
-			var w = 1000, h = 1000, r1 = h / 3, r0 = r1 - 100;
+          
+            var w = 1000, h = 1000, r1 = h / 3, r0 = r1 - 100;
+            //Calculate offset
+            var offset = Math.PI * (dummySize/(matrix.length-2 + dummySize)) / 2;
 
-			var chord = d3.layout.chord()
+          
+            function startAngle(d) {return d.startAngle + offset;}
+            function endAngle(d) {return d.endAngle + offset;}
+          
+            var chord = d3.layout.chord()
 					.padding(.02)
 					//.sortSubgroups(d3.descending)
 			var arc = d3.svg.arc()
 					.innerRadius(r0)
-					.outerRadius(r0 + 20);
+					.outerRadius(r0 + 20)
+                    .startAngle(startAngle)
+                    .endAngle(endAngle);
 
 			var svg = d3.select("body").append("svg:svg")
 					.attr("width", w)
@@ -556,11 +597,14 @@
 			g.append("svg:path")
 					.style("stroke", "black")
 					.style("fill", function(d) {
-						return rdr(d).gdata == "ingredient" ? CUISINE_COLORS.Ingredient: getColorForRecipe(rdr(d).gname, typeData); })
+                        return rdr(d).gdata == "ingredient" ? CUISINE_COLORS.Ingredient: getColorForRecipe(rdr(d).gname, typeData); })
+                    .style("visibility", function(d) {
+                        return rdr(d).gdata == "dummyNode" ? "hidden":"visible";
+                      })
 					.attr("d", arc);
 
 			g.append("svg:text")
-					.each(function(d) { d.angle = (d.startAngle + d.endAngle) / 2; })
+					.each(function(d) { d.angle = (d.startAngle + d.endAngle) / 2 + offset; })
 					.attr("dy", ".35em")
                     .attr("class","chordLabel")
 					.style("font-family", "helvetica, arial, sans-serif")
@@ -584,7 +628,13 @@
 						.style("fill", function(d) {
                             return getColorForRecipe(rdr(d).tname, typeData);
 						})
-						.attr("d", d3.svg.chord().radius(r0))
+                        .style("visibility", function(d) {
+                          return rdr(d).sname == "dummyNode" ? "hidden":"visible";
+                        })
+						.attr("d", d3.svg.chord()
+                              .radius(r0)
+                              .startAngle(startAngle)
+                              .endAngle(endAngle))
 
 			function mouseover(d, i) {
 //                tooltip.transition()
