@@ -305,8 +305,7 @@
 		function scatterPlot(arrRecipes, nodeName, nodeLink){
 			d3.select("#scatterPlotId").remove()
 			d3.select("#controls").remove()
-			console.log(arrRecipes);
-
+			
 	        var margin = {top: 120, right: 20, bottom: 30, left:1000},
     			width = 1350 - margin.left - margin.right,
 			    height = 500 - margin.top - margin.bottom,
@@ -708,7 +707,7 @@
                   var c = arc.centroid(d);
                   return "translate(" + (c[0] + d.pullOutSize) + "," + c[1] + ")" //First move the arc pullOutSize away from the original location along a horizontal line
 	                 + "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" //Stil the same
-	                 + "translate(" + 120 + ",0)" //Changed because of the first translate already applied. How far should the label be placed away from the arc itself
+	                 + "translate(" + (d.angle > Math.PI ? 120:40) + ",0)" //Changed because of the first translate already applied. How far should the label be placed away from the arc itself
 	                 + (d.angle > Math.PI ? "rotate(180)" : "") //Stil the same
               })
               .text(function(d) {
@@ -740,22 +739,26 @@
 //				      .style("left", (d3.event.pageX + 1) + "px")
 //				      .style("top", (d3.event.pageY - 1) + "px")
 //                      .text(d)
+                var chordEnds = [];
 				chordPaths.classed("fade", function(p) {
+                    if (p.source.index == i || p.target.index == i) {
+                      chordEnds.push(p.source.index, p.source.subindex)
+                    }
                     return p.source.index != i
 							&& p.target.index != i;
 				});
 
-                chordLabels.map(function(p) {
+                
+                chordLabels.map(function(p,i) {
                   var onlyRecipes = p.filter(function(pl, i) {
-                    if (pl.innerHTML == d) {
+                    if (chordEnds.indexOf(i) > -1) {
                       var style = pl.style;
                       pl.style.visibility = "visible";
-                      //console.log(p)
                     } else {
                       pl.style.visibility = "hidden";
                     }
                     return pl.innerHTML == d;
-                  })
+                  });
                 })
 			}
 	}
