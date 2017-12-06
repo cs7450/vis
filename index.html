@@ -4,6 +4,10 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<style>
+          html * {
+            font-family:"Rubik" !important
+          }
+          
           div.tooltip {
               position: absolute;
               text-align: center;
@@ -75,6 +79,7 @@
         <script src="js/mapper.js"></script>
         <script src="js/d3.stretched.chord.js"></script>
         <link rel="stylesheet" href="css/sol.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Rubik">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <script type="text/javascript" src="js/sol.js"></script>
 
@@ -301,7 +306,7 @@
 			d3.select("#controls").remove()
 			console.log(arrRecipes);
 
-	        var margin = {top: 120, right: 20, bottom: 30, left: 900},
+	        var margin = {top: 120, right: 20, bottom: 30, left:1000},
     			width = 1350 - margin.left - margin.right,
 			    height = 500 - margin.top - margin.bottom,
     			padding = 4, // separation between nodes
@@ -397,13 +402,15 @@
                 	.style("opacity", 0);
         		})
 
-			svg.append("text")
-			   .attr("x",(width /2))
-			   .attr("y", -15)
-			   .attr("text-anchor","middle")
+//			svg.append("text")
+            svg.append("foreignObject")
+			   .attr("x",15)
+			   .attr("y", -50)
+               .attr("width",width)
+               .attr("id","scatter-url")
 			   .style("font-size","16px")
 			   .style("text-decoration","underline")
-			   .html('<a href= "'+ nodeLink +'" target="_blank">' + nodeName + "</a>") // the website link is stored in the variable: NodeLink
+               .html('<a href= "'+ nodeLink +'" target="_blank">' + nodeName + "</a>") // the website link is stored in the variable: NodeLink
 
 // Set initial positions
   			arrRecipes.forEach(function(d) {
@@ -541,6 +548,27 @@
           addLegend();
 
         }
+        
+        function drawRecipeCard(selectedNode) {
+          // Find ingredients for this recipe
+          var data = window.recipes_ingredients_data;
+          var recipeData = data.filter(d => d.recipe == selectedNode);
+          var ingredientList = _.uniq(recipeData.map(d => d.ingredient));
+          
+          
+          // Make a list
+          var width = 270,
+              height = 300;
+//          var ul = d3.select("body").append("div")
+//            .attr("transform", "translate("+ (700) + "," + (500) + ")")
+//            .append("ul");
+//          ul.selectAll("li")
+//            .data(ingredientList)
+//            .enter()
+//            .append("li")
+//            .attr("class","ingredientList")
+//            .html(String)
+        }
 
         //*******************************************************************
 		//  DRAW THE CHORD DIAGRAM
@@ -598,8 +626,8 @@
 					.outerRadius(r0 + 20)
                     .startAngle(startAngle)
                     .endAngle(endAngle);
-
-			var svg = d3.select("body").append("svg:svg")
+          
+            var svg = d3.select("body").append("svg:svg")
 					.attr("width", w)
 					.attr("height", h)
 					//.attr("transform", "translate(" + 100 + "," + 200 + ")")
@@ -640,6 +668,7 @@
 						}
 						mouseover(rdr(d).gname,d.index);
 						scatterPlotData(rdr(d).gname);
+                        drawRecipeCard(rdr(d).gname);
 					});
 
 			g.append("svg:path")
