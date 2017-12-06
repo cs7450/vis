@@ -581,8 +581,8 @@
 		//  DRAW THE CHORD DIAGRAM
 		//*******************************************************************
 		function drawChords (matrix, mmap, typeData) {
-          var welcome = d3.selectAll(".welcomeText")
-            .style("visibility","hidden")
+//          var welcome = d3.selectAll(".welcomeText")
+//            .style("visibility","hidden")
           
           // separating recipes and ingredients based on code from: https://www.visualcinnamon.com/2015/08/stretched-chord.html
 			// Splice in dummy data HERE so it's based on the total number of recipes we're displaying right now
@@ -698,20 +698,25 @@
 					});
 
 			g.append("svg:path")
-					.style("stroke", "black")
-					.style("fill", function(d) {
-                        return rdr(d).gdata == "ingredient" ? CUISINE_COLORS.Ingredient: getColorForRecipe(rdr(d).gname, typeData); })
-                    .style("visibility", function(d) {
-                        return rdr(d).gdata == "dummyNode" ? "hidden":"visible";
-                      })
-					.attr("d", arc)
-                    .attr("transform", function(d, i) {
-                        //The pullOutSize should be added to the arcs on the right and subtracted from the arcs on the left
-                        //Therefore check of the starting angle is larger than half of a circle to figure out when to flip between these two options
-                        //Save the pullOutSize in the data so it can be use again for the text in a following step
-                        d.pullOutSize = pullOutSize * ( rdr(d).gdata == "recipe" ? -1 : 1); 
-                        return "translate(" + d.pullOutSize + ',' + 0 + ")";
-                    });;
+              .style("stroke", "black")
+              .style("stroke-width", function(d) {
+                return window.currIngredients.indexOf(rdr(d).gname) >= 0 ?
+                  "2px":"1px"
+              })
+//              .style("stroke-width","1")
+              .style("fill", function(d) {
+                  return rdr(d).gdata == "ingredient" ? CUISINE_COLORS.Ingredient: getColorForRecipe(rdr(d).gname, typeData); })
+              .style("visibility", function(d) {
+                  return rdr(d).gdata == "dummyNode" ? "hidden":"visible";
+                })
+              .attr("d", arc)
+              .attr("transform", function(d, i) {
+                  //The pullOutSize should be added to the arcs on the right and subtracted from the arcs on the left
+                  //Therefore check of the starting angle is larger than half of a circle to figure out when to flip between these two options
+                  //Save the pullOutSize in the data so it can be use again for the text in a following step
+                  d.pullOutSize = pullOutSize * ( rdr(d).gdata == "recipe" ? -1 : 1); 
+                  return "translate(" + d.pullOutSize + ',' + 0 + ")";
+              });
 
 //			g.append("svg:text")
             g.append("foreignObject")
