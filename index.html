@@ -95,6 +95,7 @@
 		//  CREATE MATRIX AND MAP
 		//*******************************************************************
 		d3.csv('300 recipes data/recipes_ingredients_testing.csv', function (error, data) {
+          
             window.recipes_ingredients_data = data;
             mpr = window.mpr;
 			data.sort(function(x,y) {
@@ -121,53 +122,28 @@
 				addLegend();
                 drawFilterBox(mpr.getMap());
                 d3.selectAll(".myCheckbox").on("change",updateChords);
+                //drawWelcome();
 
 			});
 		});
-
-//		function drawTypeFilter() {
-//        	d3.selectAll("svg").remove();
-//        	var filterList = [];
-//            d3.selectAll(".myCheckbox").each(function(d){
-//                cb = d3.select(this);
-//                if(cb.property("checked")){
-//                    filterList.push(cb.property("value"));
-//                }
-//            });
-//
-//            //console.log(filterList);
-//
-//            var dataFiltered = data.filter(function(d){
-//                var type = d["Type"];
-//                for (var i=0; i<filterList.length; i++) {
-//                    if (type == filterList[i]) {
-//                        return d;
-//                    }
-//                }
-//            })
-//
-//				//console.log(dataFiltered);
-//
-//       			dataFiltered.sort(function(x,y){
-//       				console.log(x.Type)
-//					return d3.ascending(x.Type,y.Type)
-//				})
-//
-//				var mpr = chordMpr(dataFiltered);
-//				mpr.addValuesToMap('ingredient', 'ingredient')
-//					.addValuesToMap('recipe', 'recipe')
-//					.setFilter(function (row, a, b) {
-//						return (row.recipe === a.name && row.ingredient === b.name) ||
-//									 (row.recipe === b.name && row.ingredient === a.name);
-//					})
-//					.setAccessor(function (recs, a, b) {
-//						if (!recs[0]) return 0;
-//						return recs.length;
-//					});
-//				//console.log(dataFiltered);
-//				drawChords(mpr.getMatrix(), mpr.getMap(), data2);
-//				addLegend();
-//        	}
+        
+        function drawWelcome() {
+          var w = 1350, h = 1000;
+          
+          var svg = d3.select("body").append("svg:svg")
+					.attr("width", w)
+					.attr("height", h)
+                    .attr("class","welcomeText")
+                    .style("visibility","visible");
+          
+          svg.append("text")
+              .text("WELCOME")
+              .attr("x",w/2)
+              .attr("y",h/3)
+              .attr("font-size","40px")
+              .attr("font-weight","bold");
+          
+        }
 
 		function addLegend(){
 			// Width and height
@@ -253,7 +229,6 @@
 		}
 
 		function scatterPlotData(selectedNode) {
-			console.log(selectedNode)
 			d3.csv('300 recipes data/recipes_ingredients_testing_scatter.csv', function (error, data) {
 				d3.csv('300 recipes data/dict.csv', function (error, data3) {
 					var nodeURL = data.filter(function(d){
@@ -526,12 +501,30 @@
               }
           });
 
-          var ingFiltered = window.recipes_ingredients_data.filter(function(d) {
-            if (window.currIngredients.indexOf(d["ingredient"]) > -1) {
-              return d;
-            };
-          })
-          var recipesFiltered = ingFiltered.sort(function(x,y){
+          var recipesFiltered = []; 
+          var uniqueRecipes = _.uniq(window.recipes_ingredients_data.map(d => d.recipe))
+          var recipeNames = uniqueRecipes.map(function(recipe_name) {
+              var ing_objects = window.recipes_ingredients_data.filter(d1 => d1.recipe == recipe_name);
+              var ing_names = ing_objects.map(d2 => d2.ingredient);
+              var allMatch = window.currIngredients.every(function(d) {
+                return ing_names.indexOf(d) >= 0;
+              });
+              if (allMatch) {
+//                var relevantRecipes = ing_objects.filter(function(d) {
+//                  return window.currIngredients.indexOf(d.ingredient) >= 0;
+//                })
+                
+                recipesFiltered = recipesFiltered.concat(ing_objects);
+              }
+          });
+          
+//          var ingFiltered = window.recipes_ingredients_data.filter(function(d) {
+//            if (window.currIngredients.indexOf(d["ingredient"]) > -1) {
+//              console.log(d);
+//              return d;
+//            };
+//          })
+          var recipesFiltered = recipesFiltered.sort(function(x,y){
               return d3.ascending(x.Type,y.Type)
           });
 
@@ -588,6 +581,9 @@
 		//  DRAW THE CHORD DIAGRAM
 		//*******************************************************************
 		function drawChords (matrix, mmap, typeData) {
+          var welcome = d3.selectAll(".welcomeText")
+            .style("visibility","hidden")
+          
           // separating recipes and ingredients based on code from: https://www.visualcinnamon.com/2015/08/stretched-chord.html
 			// Splice in dummy data HERE so it's based on the total number of recipes we're displaying right now
 
