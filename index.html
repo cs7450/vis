@@ -332,6 +332,14 @@
 	        	.attr("id","scatterPlotId")
   			.append("g")
     			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+          
+            svg.append("text")
+              .text("SIMILAR RECIPES")
+              .attr("x",width/2)
+              .attr("y",-60)
+              .attr("text-anchor","middle")
+              .style("font-size","30px")
+              .style("font-weight","bold");
 
 			var xAxis =
                 d3.svg.axis()
@@ -418,7 +426,7 @@
 			   .style("text-decoration","underline")
                .html('<a href= "'+ nodeLink +'" target="_blank">' + nodeName + "</a>") // the website link is stored in the variable: NodeLink
 
-// Set initial positions
+            // Set initial positions
   			arrRecipes.forEach(function(d) {
     			d.x = x(d.base_servings);
     			d.y = y(d.total_time_mins);
