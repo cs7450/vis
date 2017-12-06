@@ -7,7 +7,7 @@
           html * {
             font-family:"Rubik" !important
           }
-          
+
           div.tooltip {
               position: absolute;
               text-align: center;
@@ -286,7 +286,8 @@
 												"base_servings":d["base_servings"],
 												"total_time_mins":d["total_time_mins"],
 												"color":d["color"],
-												"recipe":d["recipe"]
+												"recipe":d["recipe"],
+												"learn_more_url":d["learn_more_url"]
 											};
 											arrRecipes.push(similarRecipe)
 										}
@@ -379,7 +380,13 @@
 
     		node = svg.selectAll(".dot")
       			.data(arrRecipes)
-    		  .enter().append("circle")
+    		  .enter()
+					.append("a")
+					.attr("xlink:href",function(d) {
+					  return d["learn_more_url"]
+					})
+					.attr("target", "_blank")
+					.append("circle")
       			.attr("class", "dot")
       			.attr("r", radius)
       			.attr("cx", function(d) { return x(d.x); })
@@ -548,14 +555,14 @@
           addLegend();
 
         }
-        
+
         function drawRecipeCard(selectedNode) {
           // Find ingredients for this recipe
           var data = window.recipes_ingredients_data;
           var recipeData = data.filter(d => d.recipe == selectedNode);
           var ingredientList = _.uniq(recipeData.map(d => d.ingredient));
-          
-          
+
+
           // Make a list
           var width = 270,
               height = 300;
@@ -626,7 +633,7 @@
 					.outerRadius(r0 + 20)
                     .startAngle(startAngle)
                     .endAngle(endAngle);
-          
+
             var svg = d3.select("body").append("svg:svg")
 					.attr("width", w)
 					.attr("height", h)
