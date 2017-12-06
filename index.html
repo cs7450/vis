@@ -122,7 +122,7 @@
 				addLegend();
                 drawFilterBox(mpr.getMap());
                 d3.selectAll(".myCheckbox").on("change",updateChords);
-                //drawWelcome();
+                drawWelcome();
 
 			});
 		});
@@ -130,18 +130,29 @@
         function drawWelcome() {
           var w = 1350, h = 1000;
           
-          var svg = d3.select("body").append("svg:svg")
+          d3.text("instructions.txt", function(error, data) {
+            var svg = d3.select("body").append("svg:svg")
 					.attr("width", w)
 					.attr("height", h)
                     .attr("class","welcomeText")
                     .style("visibility","visible");
           
-          svg.append("text")
-              .text("WELCOME")
-              .attr("x",w/2)
-              .attr("y",h/3)
-              .attr("font-size","40px")
-              .attr("font-weight","bold");
+            svg.append("text")
+              .text("Welcome to SousRated!")
+              .attr("x",15)
+              .attr("y", 100)
+              .style("font-size","40px")
+              .style("font-weight","bold")
+            
+            svg.append("foreignObject")
+                .text(data)
+                .attr("x",15)
+                .attr("y",200)
+                .attr("width",w*0.75)
+                .attr("font-size","20px");
+          
+            
+          });
           
         }
 
@@ -501,30 +512,30 @@
               }
           });
 
-          var recipesFiltered = []; 
-          var uniqueRecipes = _.uniq(window.recipes_ingredients_data.map(d => d.recipe))
-          var recipeNames = uniqueRecipes.map(function(recipe_name) {
-              var ing_objects = window.recipes_ingredients_data.filter(d1 => d1.recipe == recipe_name);
-              var ing_names = ing_objects.map(d2 => d2.ingredient);
-              var allMatch = window.currIngredients.every(function(d) {
-                return ing_names.indexOf(d) >= 0;
-              });
-              if (allMatch) {
-//                var relevantRecipes = ing_objects.filter(function(d) {
-//                  return window.currIngredients.indexOf(d.ingredient) >= 0;
-//                })
-                
-                recipesFiltered = recipesFiltered.concat(ing_objects);
-              }
-          });
+//          var recipesFiltered = []; 
+//          var uniqueRecipes = _.uniq(window.recipes_ingredients_data.map(d => d.recipe))
+//          var recipeNames = uniqueRecipes.map(function(recipe_name) {
+//              var ing_objects = window.recipes_ingredients_data.filter(d1 => d1.recipe == recipe_name);
+//              var ing_names = ing_objects.map(d2 => d2.ingredient);
+//              var allMatch = window.currIngredients.every(function(d) {
+//                return ing_names.indexOf(d) >= 0;
+//              });
+//              if (allMatch) {
+////                var relevantRecipes = ing_objects.filter(function(d) {
+////                  return window.currIngredients.indexOf(d.ingredient) >= 0;
+////                })
+//                
+//                recipesFiltered = recipesFiltered.concat(ing_objects);
+//              }
+//          });
           
-//          var ingFiltered = window.recipes_ingredients_data.filter(function(d) {
-//            if (window.currIngredients.indexOf(d["ingredient"]) > -1) {
-//              console.log(d);
-//              return d;
-//            };
-//          })
-          var recipesFiltered = recipesFiltered.sort(function(x,y){
+          var ingFiltered = window.recipes_ingredients_data.filter(function(d) {
+            if (window.currIngredients.indexOf(d["ingredient"]) > -1) {
+              console.log(d);
+              return d;
+            };
+          })
+          var recipesFiltered = ingFiltered.sort(function(x,y){
               return d3.ascending(x.Type,y.Type)
           });
 
@@ -581,8 +592,8 @@
 		//  DRAW THE CHORD DIAGRAM
 		//*******************************************************************
 		function drawChords (matrix, mmap, typeData) {
-//          var welcome = d3.selectAll(".welcomeText")
-//            .style("visibility","hidden")
+          var welcome = d3.selectAll(".welcomeText")
+            .style("visibility","hidden")
           
           // separating recipes and ingredients based on code from: https://www.visualcinnamon.com/2015/08/stretched-chord.html
 			// Splice in dummy data HERE so it's based on the total number of recipes we're displaying right now
@@ -699,10 +710,10 @@
 
 			g.append("svg:path")
               .style("stroke", "black")
-              .style("stroke-width", function(d) {
-                return window.currIngredients.indexOf(rdr(d).gname) >= 0 ?
-                  "2px":"1px"
-              })
+//              .style("stroke-width", function(d) {
+//                return window.currIngredients.indexOf(rdr(d).gname) >= 0 ?
+//                  "2px":"1px"
+//              })
 //              .style("stroke-width","1")
               .style("fill", function(d) {
                   return rdr(d).gdata == "ingredient" ? CUISINE_COLORS.Ingredient: getColorForRecipe(rdr(d).gname, typeData); })
