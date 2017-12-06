@@ -248,80 +248,99 @@
 		}
 
 		function scatterPlotData(selectedNode) {
-			//console.log(selectedNode)
-            data = window.recipes_ingredients_data;
-			//d3.csv('300 recipes data/recipes_ingredients_testing_scatter.csv', function (error, data) {
-            d3.csv('300 recipes data/dict.csv', function (error, data3) {
-                var nodeURL = data.filter(function(d){
-                    if (d["recipe"] == selectedNode) {
-                        nodeName = d["recipe"]
-                        nodeLink = d["learn_more_url"]
-                    }
-                })
-                var dataFiltered = data3.filter(function (d) {
-                    if (d["ingredient"] == selectedNode){
-                        var arrString = d["intersection"]
-                        arrString = arrString.replace(/'/g,"")
-                        arrString = arrString.slice(1,-1)
-                        var arr = arrString.split(",").map((item)=>item.trim());
-                        var arrRecipes = [];
-                        arr.forEach(function(element){
-                            var dataFiltered = data.filter(function (d) {
-                                if (d["recipe"] == element){
-                                    arrRecipes.push(d)
-                                }
-                            })
+			console.log(selectedNode)
+			d3.csv('300 recipes data/recipes_ingredients_testing_scatter.csv', function (error, data) {
+				d3.csv('300 recipes data/dict.csv', function (error, data3) {
+					var nodeURL = data.filter(function(d){
+						if (d["recipe"] == selectedNode) {
+							nodeName = d["recipe"]
+							nodeLink = d["learn_more_url"]
+						}
+					})
+					var dataFiltered = data3.filter(function (d) {
+						if (d["ingredient"] == selectedNode){
+							var arrString = d["intersection"]
+							arrString = arrString.replace(/'/g,"")
+							arrString = arrString.slice(1,-1)
+							var arr = arrString.split(",").map((item)=>item.trim());
+							var arrRecipes = [];
+							arr.forEach(function(element){
+								var dataFiltered = data.filter(function (d) {
+									if (d["recipe"] == element){
+										var containsRecipe = false;
+										for (i=0; i<arrRecipes.length; i++) {
+											if (arrRecipes[i].recipe == d["recipe"]) {
+												containsRecipe = true;
+											}
+										}
+										if (!containsRecipe) {
+											var similarRecipe = {
+												"x":parseInt(d["base_servings"]),
+												"y":parseInt(d["total_time_mins"]),
+												"radius":3,
+												"base_servings":d["base_servings"],
+												"total_time_mins":d["total_time_mins"],
+												"color":d["color"],
+												"recipe":d["recipe"]
+											};
+											arrRecipes.push(similarRecipe)
+										}
+									}
+								})
 
-                        })
-                        scatterPlot(arrRecipes, nodeName, nodeLink)
-                    }
-                })
-            })
-        };
+							})
+							scatterPlot(arrRecipes, nodeName, nodeLink)
+						}
+					})
+				})
+			})
+		};
 
 		function scatterPlot(arrRecipes, nodeName, nodeLink){
 			d3.select("#scatterPlotId").remove()
-			//console.log(arrRecipes)
+			d3.select("#controls").remove()
+			console.log(arrRecipes);
 
-	    	var width = 270,
-	        	height = 300,
-	        	padding = 40
+	        var margin = {top: 120, right: 20, bottom: 30, left: 900},
+    			width = 1350 - margin.left - margin.right,
+			    height = 500 - margin.top - margin.bottom,
+    			padding = 4, // separation between nodes
+    			radius = 6;
 
-	    	var svg = d3.select("svg")
-	    		.append("svg")
-	        	//.attr("width", width)
-	        	.attr("height", height)
-	        	.attr("id","scatterPlotId")
-	        	.append("g")
-	        	.attr("transform", "translate("+ (700) + "," + (0) + ")")
-
-	        // create scale function
 	        var x = d3.scale.linear()
-        		.range([0, width - padding])
-        		.domain([0, d3.max(arrRecipes, function (d) {
-            		return d.base_servings;
-        		})]);
-        	var y = d3.scale.linear()
-        		.range([height- padding, padding])
-        		.domain([0, d3.max(arrRecipes, function (d) {
-            		return Number(d.total_time_mins);
+    			.range([0, width])
+    			.domain([0, d3.max(arrRecipes, function (d) {
+            		return parseInt(d.x);
         		})]);
 
-            // define X,Y axis
-			var xAxis =
+			var y = d3.scale.linear()
+    			.range([height, 0])
+    			.domain([0, d3.max(arrRecipes, function (d) {
+            		return parseInt(d.y);
+        		})]);
+
+    		var color = d3.scale.category10();
+
+  			var svg = d3.select("svg").append("svg")
+    			.attr("width", width + margin.left + margin.right)
+    			.attr("height", height + margin.top + margin.bottom + 100)
+	        	.attr("id","scatterPlotId")
+  			.append("g")
+    			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+			var xAxis = 
                 d3.svg.axis()
 				  .scale(x)
 				  .orient("bottom")
 				  .ticks(6);
 
-			var yAxis =
+			var yAxis = 
                 d3.svg.axis()
                     .scale(y)
 					.orient("left")
-					.ticks(8);
+					.ticks(8);	
 
-
-			// Create X-axis, Y-axis
+    		// Create X-axis, Y-axis
 		    svg.append("g")
 		        .attr("transform", "translate(" + (0) + "," + (height - padding) + ")")
 		        .attr("class", "axis")
@@ -331,7 +350,7 @@
 		        .attr("transform", "translate(" + (0) + "," + (0) + ")")
 		        .call(yAxis);
 
-		    //Create X axis label
+		    //Create X axis label   
 		    svg.append("text")
               .attr("x", width / 2 )
               .attr("y",  y(0) + 35 )
@@ -340,61 +359,83 @@
 
 		    //Create Y axis label
 		    svg.append("text")
-				.attr("transform", "translate("+ (-30) +","+(height/2)+") rotate (-90)")
+				.attr("transform", "translate("+ (-40) +","+(height/2)+") rotate (-90)")
 			    .style("text-anchor", "middle")
 			    .text("Total Cooking Time");
 
-			var tooltip = d3.select("body").append("div")
+    		arrRecipes.forEach(function(d) {
+    			d[x] = +d[x];
+    			d[y] = +d[y];
+  			});
+
+      		var tooltip = d3.select("body").append("div")
                   .attr("class", "tooltip")
                   .style("opacity", 0);
 
-			//draw data points
-			svg.selectAll(".dot")
-			   .data(arrRecipes)
-			   .enter()
-			   .append("circle")
-			   .attr("cx", function(d){
-			   		return x(d["base_servings"]);
-			   })
-			   .attr("cy", function(d){
-                    if(isNaN(Number(d["total_time_mins"]))) {
-                      var time = 0;
-                    } else {
-                      var time = Number(d.total_time_mins); 
-                    };
-			   		return y(time);
-			   })
-			   .attr("r",3)
-			   .style("stroke", function(d) {
+    		node = svg.selectAll(".dot")
+      			.data(arrRecipes)
+    		  .enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", radius)
+      			.attr("cx", function(d) { return x(d.x); })
+      			.attr("cy", function(d) { return y(d.y); })
+      			.style("stroke", "black")
+			    .style("fill", function(d) {
                   return getColorForRecipe(d["recipe"], window.typeData)
                 })
-			   .style("fill", function(d) {
-                  return getColorForRecipe(d["recipe"], window.typeData)
-                })
-			   .on("mouseover",function(d){
-			   		tooltip.transition()
-                		.duration(200)
+      			.on("mouseover",function(d){
+			   		tooltip.transition()		
+                		.duration(200)		
                 		.style("opacity", .9);
 				    tooltip.html(d["recipe"])
 				      .style("left", (d3.event.pageX + 1) + "px")
 				      .style("top", (d3.event.pageY - 1) + "px")
-/*				    tooltip.transition()
-				      .duration(200)
-				      .style("opacity", .9);*/
 				})
-			   .on("mouseout", function(d) {
-            		tooltip.transition()
-                	.duration(500)
-                	.style("opacity", 0);
+			   .on("mouseout", function(d) {		
+            		tooltip.transition()		
+                	.duration(500)		
+                	.style("opacity", 0);	
         		})
+
 			svg.append("text")
 			   .attr("x",(width /2))
-			   .attr("y", 15)
+			   .attr("y", -15)
 			   .attr("text-anchor","middle")
 			   .style("font-size","16px")
-				 .style("fill","#0066CC")
 			   .style("text-decoration","underline")
 			   .html('<a href= "'+ nodeLink +'" target="_blank">' + nodeName + "</a>") // the website link is stored in the variable: NodeLink
+
+// Set initial positions
+  			arrRecipes.forEach(function(d) {
+    			d.x = x(d.base_servings);
+    			d.y = y(d.total_time_mins);
+  			});
+
+	        var force = d3.layout.force()
+    			.nodes(arrRecipes)
+    			.size([width, height])
+    			.on("tick", tick)
+    			.charge(-10)
+    			.chargeDistance(10);
+
+  			force.start();
+				for (var i = 0; i < 1; ++i) force.tick();
+			force.stop();
+
+
+  				function tick(e) {
+				    node.each(moveTowardDataPosition(e.alpha));
+
+    				node.attr("cx", function(d) { return parseInt(d.x); })
+    	    			.attr("cy", function(d) { return parseInt(d.y); });
+	  			}
+
+  				function moveTowardDataPosition(alpha) {
+    				return function(d) {
+	      				d.x += (x(d.x) - d.x) * 0.00000000001 * alpha;
+      					d.y += (y(d.y) - d.y) * 0.00000000001 * alpha;
+    				};
+  				}
 		}
 
 		function getColorForRecipe(recipeName, typeData) {
@@ -540,7 +581,7 @@
 			}
 
           
-            var w = 1000, h = 1000, r1 = h / 3, r0 = r1 - 100;
+            var w = 1350, h = 1000, r1 = h / 3, r0 = r1 - 100;
             //Calculate offset
             var offset = Math.PI * (dummySize/(matrix.length-2 + dummySize)) / 2;
             // How far (px) to pull out chords
