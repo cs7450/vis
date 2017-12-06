@@ -580,7 +580,7 @@
 		//  DRAW THE CHORD DIAGRAM
 		//*******************************************************************
 		function drawChords (matrix, mmap, typeData) {
-            // separating recipes and ingredients based on code from: https://www.visualcinnamon.com/2015/08/stretched-chord.html
+          // separating recipes and ingredients based on code from: https://www.visualcinnamon.com/2015/08/stretched-chord.html
 			// Splice in dummy data HERE so it's based on the total number of recipes we're displaying right now
 
             // Calculate size of offset to occupy a set amount of the diagram
@@ -640,6 +640,22 @@
 				.append("svg:g")
 					.attr("id", "circle")
 					.attr("transform", "translate(" + w / 2.5 + "," + h / 2.5 + ")");
+          
+            svg.append("text")
+              .text("RECIPES")
+              .attr("x",-r1/2)
+              .attr("y",-r1)
+              .attr("text-anchor","middle")
+              .style("font-size","30px")
+              .style("font-weight","bold");
+          
+            svg.append("text")
+              .text("INGREDIENTS")
+              .attr("x",r1/2)
+              .attr("y",-r1)
+              .attr("text-anchor","middle")
+              .style("font-size","30px")
+              .style("font-weight","bold");
 
 			svg.append("circle")
 					.attr("r", r0 + 20);
