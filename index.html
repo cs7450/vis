@@ -83,14 +83,14 @@
 		CUISINE_COLORS = {"Italian":"FFD92F", "American":"#66C2A5", "Chinese":"#FC8D62",
                          "Mexican":"#E78AC3", "Japanese":"#8DA0CB",
                           "Vegetarian":"#A6D854", "Ingredient":"#FFFFFF"};
-        window.currIngredients = new Array(0); 
+        window.currIngredients = new Array(0);
 
 
 		//*******************************************************************
 		//  CREATE MATRIX AND MAP
 		//*******************************************************************
 		d3.csv('300 recipes data/recipes_ingredients_testing.csv', function (error, data) {
-            window.recipes_ingredients_data = data; 
+            window.recipes_ingredients_data = data;
             mpr = window.mpr;
 			data.sort(function(x,y) {
 				return d3.ascending(x.Type,y.Type)
@@ -328,17 +328,17 @@
   			.append("g")
     			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-			var xAxis = 
+			var xAxis =
                 d3.svg.axis()
 				  .scale(x)
 				  .orient("bottom")
 				  .ticks(6);
 
-			var yAxis = 
+			var yAxis =
                 d3.svg.axis()
                     .scale(y)
 					.orient("left")
-					.ticks(8);	
+					.ticks(8);
 
     		// Create X-axis, Y-axis
 		    svg.append("g")
@@ -350,7 +350,7 @@
 		        .attr("transform", "translate(" + (0) + "," + (0) + ")")
 		        .call(yAxis);
 
-		    //Create X axis label   
+		    //Create X axis label
 		    svg.append("text")
               .attr("x", width / 2 )
               .attr("y",  y(0) + 35 )
@@ -361,7 +361,7 @@
 		    svg.append("text")
 				.attr("transform", "translate("+ (-40) +","+(height/2)+") rotate (-90)")
 			    .style("text-anchor", "middle")
-			    .text("Total Cooking Time");
+			    .text("Total Cooking Time (min)");
 
     		arrRecipes.forEach(function(d) {
     			d[x] = +d[x];
@@ -384,17 +384,17 @@
                   return getColorForRecipe(d["recipe"], window.typeData)
                 })
       			.on("mouseover",function(d){
-			   		tooltip.transition()		
-                		.duration(200)		
+			   		tooltip.transition()
+                		.duration(200)
                 		.style("opacity", .9);
 				    tooltip.html(d["recipe"])
 				      .style("left", (d3.event.pageX + 1) + "px")
 				      .style("top", (d3.event.pageY - 1) + "px")
 				})
-			   .on("mouseout", function(d) {		
-            		tooltip.transition()		
-                	.duration(500)		
-                	.style("opacity", 0);	
+			   .on("mouseout", function(d) {
+            		tooltip.transition()
+                	.duration(500)
+                	.style("opacity", 0);
         		})
 
 			svg.append("text")
@@ -495,7 +495,7 @@
               } else return;
             } else console.log("unrecognized change input!");
           }
-          
+
           // Check cuisine filters at the top
           var filterList = [];
           d3.selectAll(".myCheckbox").each(function(d){
@@ -513,7 +513,7 @@
           var recipesFiltered = ingFiltered.sort(function(x,y){
               return d3.ascending(x.Type,y.Type)
           });
-          
+
           //Filter for cuisine
           var cuisineFiltered = recipesFiltered.filter(function(d){
                 var type = d["Type"];
@@ -548,12 +548,12 @@
 		function drawChords (matrix, mmap, typeData) {
             // separating recipes and ingredients based on code from: https://www.visualcinnamon.com/2015/08/stretched-chord.html
 			// Splice in dummy data HERE so it's based on the total number of recipes we're displaying right now
-		    
+
             // Calculate size of offset to occupy a set amount of the diagram
             if (matrix.length == 0) return;
             var numEls = matrix.length - 2, emptyPerc = 0.3;
-            var dummySize = Math.round(matrix.length*emptyPerc);	
-          
+            var dummySize = Math.round(matrix.length*emptyPerc);
+
 			var onlyIngredients = Object.keys(mmap).filter(d => mmap[d].data == "ingredient");
 			var ingIDs = onlyIngredients.map(function(d) {
 				return mmap[d].id;
@@ -572,7 +572,7 @@
 			var lastRow = matrix.length-1; var idCol = maxID+1;
             matrix[lastRow][idCol] = dummySize;
 			matrix[idCol][lastRow] = dummySize;
-			
+
 			// Now, update mmap to adjust for dummy data;
 			mmap_keys = Object.keys(mmap);
 			for (i = maxID+1; i < mmap_keys.length; i++) {
@@ -580,16 +580,16 @@
 				mmap[recipe_name].id = mmap[recipe_name].id + 1;
 			}
 
-          
+
             var w = 1350, h = 1000, r1 = h / 3, r0 = r1 - 100;
             //Calculate offset
             var offset = Math.PI * (dummySize/(matrix.length-2 + dummySize)) / 2;
             // How far (px) to pull out chords
             var pullOutSize = 50;
-          
+
             function startAngle(d) {return d.startAngle + offset;}
             function endAngle(d) {return d.endAngle + offset;}
-          
+
             var chord = d3.layout.chord()
 					.padding(.02)
 					//.sortSubgroups(d3.descending)
@@ -667,7 +667,7 @@
               .style("visibility", "hidden")
               .attr("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
               .attr("transform", function(d) {
-                  var c = arc.centroid(d); 
+                  var c = arc.centroid(d);
 //                  return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
 //                          + "translate(" + (r0 + 30) + ")"
 //                          + (d.angle > Math.PI ? "rotate(180)" : "");
