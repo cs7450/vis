@@ -690,12 +690,14 @@
                         //The pullOutSize should be added to the arcs on the right and subtracted from the arcs on the left
                         //Therefore check of the starting angle is larger than half of a circle to figure out when to flip between these two options
                         //Save the pullOutSize in the data so it can be use again for the text in a following step
-                        d.pullOutSize = pullOutSize * ( rdr(d).gdata == "recipe" ? -1 : 1); //The 0.01 is for rounding errors
+                        d.pullOutSize = pullOutSize * ( rdr(d).gdata == "recipe" ? -1 : 1); 
                         return "translate(" + d.pullOutSize + ',' + 0 + ")";
                     });;
 
-			g.append("svg:text")
+//			g.append("svg:text")
+            g.append("foreignObject")
               .each(function(d) { d.angle = (d.startAngle + d.endAngle) / 2 + offset; })
+              .attr("width",100)
               .attr("dy", ".35em")
               .attr("class","chordLabel")
               .style("font-family", "helvetica, arial, sans-serif")
@@ -704,12 +706,9 @@
               .attr("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
               .attr("transform", function(d) {
                   var c = arc.centroid(d);
-//                  return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
-//                          + "translate(" + (r0 + 30) + ")"
-//                          + (d.angle > Math.PI ? "rotate(180)" : "");
                   return "translate(" + (c[0] + d.pullOutSize) + "," + c[1] + ")" //First move the arc pullOutSize away from the original location along a horizontal line
 	                 + "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" //Stil the same
-	                 + "translate(" + 20 + ",0)" //Changed because of the first translate already applied. How far should the label be placed away from the arc itself
+	                 + "translate(" + 120 + ",0)" //Changed because of the first translate already applied. How far should the label be placed away from the arc itself
 	                 + (d.angle > Math.PI ? "rotate(180)" : "") //Stil the same
               })
               .text(function(d) {
